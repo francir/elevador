@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Elevador
+namespace Teste.Elevador
 {
     public interface IElevador
     {
@@ -15,5 +15,6 @@ namespace Elevador
         void Desembarcar(int qtdPessoas);
         void FecharPorta();
         void AbrirPorta();
+        void setVisor(IVisor visor);
     }
 }

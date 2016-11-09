@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Teste.Elevador;
 
 namespace elevadorTeste
 {
     public class ElevadorFactory
     {
-        public static Elevador.IElevador Create()
+        //14. A classe ElevadorFactory deve permitir ser criada sem parâmetros no construtor;
+        public static IElevador Create()
         {
-            return new Elevador.Elevador(10, 8, new VisorTeste());
+            return new Elevador(10, 8);
         }
     }
 }

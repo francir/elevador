@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Elevador
+namespace Teste.Elevador
 {
     public class Elevador : IElevador
     {
@@ -27,9 +27,9 @@ namespace Elevador
 
         protected Rota Rota { get; set; }
 
-        public Elevador(int qtdAndares, int qtdMaxPessoas, IVisor visor)
+        public Elevador(int qtdAndares, int qtdMaxPessoas)
         {
-            Visor = visor;
+            //1.O elevador começa parado no térreo(Andar Zero), com as portas abertas;
             AndarAtual = 0;
             StatusElevador = Enums.StatusElevador.Parado;
             StatusPorta = Enums.StatusPorta.Aberta;
@@ -39,6 +39,7 @@ namespace Elevador
             QtdMaxPessoas = qtdMaxPessoas;
 
             Andares = new bool[QtdAndares + 1];
+            InicializaTimerPorta();
         }
 
         private void InicializaTimerPorta()
@@ -54,12 +55,13 @@ namespace Elevador
         {
             //Verifica se existe uma rota a seguir
             CriaRota();
-            //Caso exista, fecha a porta para iniciar o movimento
+            //4. A porta do elevador só se fecha quando há uma rota a seguir; 
             if (Rota != null)
                 FecharPorta();
 
             //Reinicia o tempo de espera com a porta aberta para receber novos comandos e calcular nova rota, caso exista
             m_mainTimer.Start();
+            MostrarVisor();
         }
 
         protected void MoverPara(Rota rota)
@@ -67,42 +69,46 @@ namespace Elevador
             //Move entres os andares até o destino atualizando o status
             while (AndarAtual != rota.Andar)
             {
+                //2. Ao mover o elevador, deve-se atualizar o seu status (subindo ou descendo); 
                 if (rota.Direcao == Enums.DirecaoRota.Cima)
-                {
                     AndarAtual++;
-                    StatusElevador = Enums.StatusElevador.Subindo;
-                }
                 else
-                {
                     AndarAtual--;
-                    StatusElevador = Enums.StatusElevador.Descendo;
-                }
 
+                //Timer para conseguir visualizar o movimento
                 Thread.Sleep(TempoEntreAndares);
-                Andares[AndarAtual] = false;
-                Visor.Mostrar(StatusElevador, StatusPorta, AndarAtual, Rota, Andares);
+                MostrarVisor();
             }
-
+            Andares[AndarAtual] = false;
             //Ao chegar no destino, abra a porta e atualize o status para parado
             AbrirPorta();
         }
 
+        /// <summary>
+        /// Metodo para criação da rota a ser seguida
+        /// Este item foi modificado - 5. A rota deve conter apenas os andares que ainda não foram visitados; 
+        /// Para poder selecionar um andar, em uma pausa durante o percurso, 
+        /// defini que a rota só retorna o próximo andar a seguir, e não o caminho completo
+        /// </summary>
         public void CriaRota()
         {
-            //Se existir mais pessoas que o suportado, não cria a rota
+            //8. Uma rota não pode ser feita com um número superior à capacidade máxima de pessoas; 
             if (QtdPessoas > QtdMaxPessoas)
+            {
                 Rota = null;
-
-            //Resgata os andares acima e abaixo solicitados
+                return;
+            }
+            //10. Assim que selecionado os andares o elevador cria a rota;
             var acima = GetProximoAcima();
             var abaixo = GetProximoAbaixo();
-
             if (!acima.HasValue && !abaixo.HasValue)
                 Rota = null;
 
             //Se já existir uma rota, verifica a direção para criar a nova rota
             if (Rota != null)
             {
+                //3.O elevador deve levar em consideração se está descendo ou subindo para definir a rota, ou seja, 
+                //  se estiver subindo deve subir até o ultimo andar definido antes de começar a descer;
                 if (Rota.Direcao == Enums.DirecaoRota.Cima && acima.HasValue)
                     Rota.Andar = acima.Value;
                 else if (Rota.Direcao == Enums.DirecaoRota.Cima && abaixo.HasValue)
@@ -127,7 +133,7 @@ namespace Elevador
                     Rota = new Rota { Andar = acima.Value, Direcao = Enums.DirecaoRota.Cima };
                 else if (!acima.HasValue && abaixo.HasValue)
                     Rota = new Rota { Andar = abaixo.Value, Direcao = Enums.DirecaoRota.Baixo };
-                else
+                else if (acima.HasValue && abaixo.HasValue)
                 {
                     //Se tiver andar solicitado acima e abaixo, verificar o mais perto
                     if (Math.Abs(AndarAtual - acima.Value) > Math.Abs(AndarAtual - abaixo.Value))
@@ -158,34 +164,50 @@ namespace Elevador
         public void SelecionaAndar(int andar)
         {
             if (andar > QtdAndares || andar < 0)
+                //13. As exceções de sistema devem ser usadas corretamente (Operações inválidas, argumentos nulos, etc.). Observação: Sempre que possível, utilize as exceções de sistema já definidas, ex: NullReferenceException, ArgumentException, InvalidCastException, etc. ; 
                 throw new ArgumentException("Andar inválido.");
+
+            //12.Os passageiros só podem selecionar o andar de destino da rota com a porta aberta;
             if (StatusPorta == Enums.StatusPorta.Fechada)
+                //13. As exceções de sistema devem ser usadas corretamente (Operações inválidas, argumentos nulos, etc.). Observação: Sempre que possível, utilize as exceções de sistema já definidas, ex: NullReferenceException, ArgumentException, InvalidCastException, etc. ; 
                 throw new InvalidOperationException("Não é possível selecionar o andar com a porta fechada.");
 
+            //11.Se um dos andares selecionados for o andar atual o elevador simplesmente ignora o andar atual e não o incluir na rota;
             if (andar != AndarAtual)
-            {
                 Andares[andar] = true;
-                InicializaTimerPorta();
-            }
         }
 
         public void Embarcar(int qtdPessoas)
         {
+            //7. Os passageiros só podem embarcar ou desembarcar com o elevador parado e de portas abertas;
             if (StatusPorta == Enums.StatusPorta.Aberta && StatusElevador == Enums.StatusElevador.Parado)
                 QtdPessoas += qtdPessoas;
+            else
+                throw new InvalidOperationException("Não é possível embarcar com a porta fechada");
+
+            MostrarVisor();
         }
 
         public void Desembarcar(int qtdPessoas)
         {
+            //7. Os passageiros só podem embarcar ou desembarcar com o elevador parado e de portas abertas;
             if (StatusPorta == Enums.StatusPorta.Aberta && StatusElevador == Enums.StatusElevador.Parado)
+            {
                 QtdPessoas -= qtdPessoas;
+                if (qtdPessoas < 0) qtdPessoas = 0;
+            }
+            else
+                throw new InvalidOperationException("Não é possível desembarcar com a porta fechada");
+
+            MostrarVisor();
         }
 
         public void AbrirPorta()
         {
+            //6. O status parado só ocorre quando a porta é aberta, a mudança para subindo ou descendo ocorre quando a porta se fecha; 
             StatusElevador = Enums.StatusElevador.Parado;
             StatusPorta = Enums.StatusPorta.Aberta;
-            Visor.Mostrar(StatusElevador, StatusPorta, AndarAtual, Rota, Andares);
+            MostrarVisor();
         }
 
         public void FecharPorta()
@@ -193,15 +215,27 @@ namespace Elevador
             if (Rota == null)
                 throw new InvalidOperationException("Não existe rota para se locomover.");
 
-            //Se fechou a porta, atualiza o status e mova até o destino
+            //6. O status parado só ocorre quando a porta é aberta, a mudança para subindo ou descendo ocorre quando a porta se fecha; 
+            StatusPorta = Enums.StatusPorta.Fechada;
             if (Rota.Direcao == Enums.DirecaoRota.Cima)
                 StatusElevador = Enums.StatusElevador.Subindo;
             else
                 StatusElevador = Enums.StatusElevador.Descendo;
 
-            Visor.Mostrar(StatusElevador, StatusPorta, AndarAtual, Rota, Andares);
+            MostrarVisor();
+            //9.O Elevador só se movimenta quando a porta se fecha;
             MoverPara(Rota);
         }
 
+        public void setVisor(IVisor visor)
+        {
+            Visor = visor;
+        }
+
+        protected void MostrarVisor()
+        {
+            if (Visor != null)
+                Visor.Mostrar(StatusElevador, StatusPorta, AndarAtual, Rota, Andares, QtdPessoas);
+        }
     }
 }

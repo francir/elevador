@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Elevador.Enums;
+using static Teste.Elevador.Enums;
 
-namespace Elevador
+namespace Teste.Elevador
 {
     public class Rota
     {

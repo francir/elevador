@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Elevador
+namespace Teste.Elevador
 {
     public class Enums
     {
