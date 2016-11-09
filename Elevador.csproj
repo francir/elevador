@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Elevador.cs" />
+    <Compile Include="ElevadorFactory.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="IElevador.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
