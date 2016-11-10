@@ -10,10 +10,10 @@ namespace Teste.Elevador
     public class Elevador : IElevador
     {
         //Temporizador de verificação do elevador com tempo de 5 segundos para fechamento da porta
-        private System.Timers.Timer m_mainTimer;
-        private int interval = 5000;
+        protected System.Timers.Timer m_mainTimer;
+        protected int interval = 5000;
         protected IVisor Visor;
-        private int TempoEntreAndares = 1000;
+        protected int TempoEntreAndares = 1000;
 
         protected Enums.StatusElevador StatusElevador { get; set; }
         protected Enums.StatusPorta StatusPorta { get; set; }
@@ -39,11 +39,8 @@ namespace Teste.Elevador
             QtdMaxPessoas = qtdMaxPessoas;
 
             Andares = new bool[QtdAndares + 1];
-            InicializaTimerPorta();
-        }
 
-        private void InicializaTimerPorta()
-        {
+            //Inicializa o timer
             m_mainTimer = new System.Timers.Timer();
             m_mainTimer.Interval = interval;
             m_mainTimer.Elapsed += m_mainTimer_Elapsed;
@@ -51,7 +48,12 @@ namespace Teste.Elevador
             m_mainTimer.Start();
         }
 
-        private void m_mainTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        /// <summary>
+        /// Metodo disparado a cada 5 segundos para verificação se existe alguma rota a seguir, conseguindo assim simular um elevador
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected void m_mainTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             //Verifica se existe uma rota a seguir
             CriaRota();
@@ -64,6 +66,10 @@ namespace Teste.Elevador
             MostrarVisor();
         }
 
+        /// <summary>
+        /// Método para movimentar o elevador até uma rota (andar) destino
+        /// </summary>
+        /// <param name="rota">Rota que contem a direção e o andar a seguir</param>
         protected void MoverPara(Rota rota)
         {
             //Move entres os andares até o destino atualizando o status
@@ -90,7 +96,7 @@ namespace Teste.Elevador
         /// Para poder selecionar um andar, em uma pausa durante o percurso, 
         /// defini que a rota só retorna o próximo andar a seguir, e não o caminho completo
         /// </summary>
-        public void CriaRota()
+        protected void CriaRota()
         {
             //8. Uma rota não pode ser feita com um número superior à capacidade máxima de pessoas; 
             if (QtdPessoas > QtdMaxPessoas)
@@ -145,7 +151,11 @@ namespace Teste.Elevador
 
         }
 
-        public int? GetProximoAcima()
+        /// <summary>
+        /// Método para verificar se existe um andar acima do atual solicitado
+        /// </summary>
+        /// <returns></returns>
+        protected int? GetProximoAcima()
         {
             for (int next = AndarAtual + 1; next <= QtdAndares; next++)
                 if (Andares[next])
@@ -153,13 +163,53 @@ namespace Teste.Elevador
             return null;
         }
 
-        public int? GetProximoAbaixo()
+        /// <summary>
+        /// Método para verificar se existe um andar abaixo do atual solicitado
+        /// </summary>
+        /// <returns></returns>
+        protected int? GetProximoAbaixo()
         {
             for (int next = AndarAtual - 1; next >= 0; next--)
                 if (Andares[next])
                     return next;
             return null;
         }
+
+        protected void AbrirPorta()
+        {
+            //6. O status parado só ocorre quando a porta é aberta, a mudança para subindo ou descendo ocorre quando a porta se fecha; 
+            StatusElevador = Enums.StatusElevador.Parado;
+            StatusPorta = Enums.StatusPorta.Aberta;
+            MostrarVisor();
+        }
+
+        protected void FecharPorta()
+        {
+            if (Rota == null)
+                throw new InvalidOperationException("Não existe rota para se locomover.");
+
+            //6. O status parado só ocorre quando a porta é aberta, a mudança para subindo ou descendo ocorre quando a porta se fecha; 
+            StatusPorta = Enums.StatusPorta.Fechada;
+            if (Rota.Direcao == Enums.DirecaoRota.Cima)
+                StatusElevador = Enums.StatusElevador.Subindo;
+            else
+                StatusElevador = Enums.StatusElevador.Descendo;
+
+            MostrarVisor();
+            //9.O Elevador só se movimenta quando a porta se fecha;
+            MoverPara(Rota);
+        }
+
+        /// <summary>
+        /// Método utilizado para atualizar o status do visor, caso exista um
+        /// </summary>
+        protected void MostrarVisor()
+        {
+            if (Visor != null)
+                Visor.Mostrar(StatusElevador, StatusPorta, AndarAtual, Rota, Andares, QtdPessoas);
+        }
+
+        #region Métodos implementados da interface
 
         public void SelecionaAndar(int andar)
         {
@@ -202,40 +252,11 @@ namespace Teste.Elevador
             MostrarVisor();
         }
 
-        public void AbrirPorta()
-        {
-            //6. O status parado só ocorre quando a porta é aberta, a mudança para subindo ou descendo ocorre quando a porta se fecha; 
-            StatusElevador = Enums.StatusElevador.Parado;
-            StatusPorta = Enums.StatusPorta.Aberta;
-            MostrarVisor();
-        }
-
-        public void FecharPorta()
-        {
-            if (Rota == null)
-                throw new InvalidOperationException("Não existe rota para se locomover.");
-
-            //6. O status parado só ocorre quando a porta é aberta, a mudança para subindo ou descendo ocorre quando a porta se fecha; 
-            StatusPorta = Enums.StatusPorta.Fechada;
-            if (Rota.Direcao == Enums.DirecaoRota.Cima)
-                StatusElevador = Enums.StatusElevador.Subindo;
-            else
-                StatusElevador = Enums.StatusElevador.Descendo;
-
-            MostrarVisor();
-            //9.O Elevador só se movimenta quando a porta se fecha;
-            MoverPara(Rota);
-        }
-
         public void setVisor(IVisor visor)
         {
             Visor = visor;
         }
 
-        protected void MostrarVisor()
-        {
-            if (Visor != null)
-                Visor.Mostrar(StatusElevador, StatusPorta, AndarAtual, Rota, Andares, QtdPessoas);
-        }
+        #endregion
     }
 }

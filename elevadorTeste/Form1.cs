@@ -11,6 +11,10 @@ using Teste.Elevador;
 
 namespace elevadorTeste
 {
+    /// <summary>
+    /// Formulario para simulação da classe elevador.
+    /// Esta classe implementa a interface visor para poder mostrar os dados na tela em tempo real
+    /// </summary>
     public partial class frmControle : Form, IVisor
     {
         IElevador elevador;
@@ -59,6 +63,8 @@ namespace elevadorTeste
             }
         }
 
+        #region Funções do Visor
+
         public void Mostrar(Enums.StatusElevador statusElevador, Enums.StatusPorta statusPorta, int andarAtual, Rota rota, bool[] Andares, int QtdPessoas)
         {
             if (this.lblStatusElevador.InvokeRequired)
@@ -85,7 +91,7 @@ namespace elevadorTeste
             else
                 this.lblAndarAtual.Text = andarAtual.ToString();
 
-            var texto= "";
+            var texto = "";
             if (rota != null)
                 texto = rota.Direcao.ToString();
 
@@ -142,5 +148,6 @@ namespace elevadorTeste
         {
             this.lblProximo.Text = texto;
         }
+        #endregion
     }
 }
